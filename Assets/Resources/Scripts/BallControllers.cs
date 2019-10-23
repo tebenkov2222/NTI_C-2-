@@ -12,7 +12,8 @@ public class AutoBallControl : BallControl
     private int NumCoin = 0, wayCount = 0;
     float xP, yP;
     int res = 0;
-    bool oneTest = false, reset = false;
+    int rsI = 0;
+    bool reset = false;
     List<int> way = new List<int>();
     public override void SetMaze()
     {
@@ -36,17 +37,13 @@ public class AutoBallControl : BallControl
         }*/
         CoinsSort();
         int max = Coins.Length / 2; for (int i = 0; i < max; i++) Debug.Log(Coins[0, i] + " : " + Coins[1, i] + " = " + Maze[MazeDescription.Rows - Coins[1, i] - 1, Coins[0, i]] + " = " + CoinsChange[i]);
+        goToTheBall(Coins[1, 0], Coins[0, 0]);
     }
     public override int GetMove(float x, float y)
     {
         for (int i = 0; i < NumCoin; i++) DebugRay(Coins[0, i] * 4, Coins[1, i] * 4, 3f, Color.yellow);
         if (NumCoin != 0)
         {
-            if (!oneTest)
-            {
-                goToTheBall(Coins[1, 0], Coins[0, 0]);
-                oneTest = true;
-            }
             if (way.Count != 0)
             {
                 if (!reset)
@@ -88,11 +85,25 @@ public class AutoBallControl : BallControl
             {
                 Debug.LogError("Coin Succesfull");
                 res = 0;
+                rsI++;
                 int ti = Coins[0, 0], ty = Coins[1, 0];
                 resetMaze((int)x, (int)y);
                 MazeDescriptionVoid((int)ti*4, (int)ty*4);
+                if (rsI == 2)
+                {
+                    Debug.LogError("ONESTOPPED");
+                    for (int q = 0; q < MazeDescription.Rows; q++)
+                    {
+                        string Log = "";
+                        for (int w = 0; w < MazeDescription.Cols; w++)
+                        {
+                            Log += Maze[q, w] + "\t";
+                        }
+                        Debug.Log(Log);
+                    }
+                }
                 CoinsSort();
-                goToTheBall(Coins[1, 0], Coins[0, 0]);
+                if (rsI != 2) goToTheBall(Coins[1, 0], Coins[0, 0]);
                 reset = false;
             }
         }
@@ -108,17 +119,22 @@ public class AutoBallControl : BallControl
             }
         }
         Maze[MazeDescription.Rows - 1 - Coins[1,0], 0 + Coins[0, 0]] = 0;
-        Coins[1, 0] = -1;
-        Coins[0, 0] = -1;
+        /*Coins[1, 0] = -1;
+        Coins[0, 0] = -1;*/
         NumCoin = 0;
         //for (int iw = 0; iw < wayCount; iw++) Debug.Log("WAY=" + way[iw] + "'");
         way.Clear();
         wayCount = 0;
-        Debug.Log("WAY.CLEANED");
-
+        for (int iw = 0; iw < MazeDescription.Coins; iw++) Debug.Log(" " + Coins[0, iw] + " " + Coins[1, iw]);
+        Debug.LogError("WAY.CLEANED");
     }
     public void MazeDescriptionVoid(int i, int y)
     {
+        //if (rsI == 2)
+        //{
+        //    DebugRay(i, y, 4f, Color.red);
+        //    //Debug.LogError("ONESTOPPED");
+        //}
         int MazeI = i / 4, MazeY = y / 4;
         //Debug.Log("MazeDescriptionVoid(" + MazeI + " " + MazeY + ")");
         bool[] direction = RayCheck(i, y,1.45f, 3f);
@@ -193,6 +209,17 @@ public class AutoBallControl : BallControl
         ray = new Ray(start, forward);
         Debug.DrawRay(start, ray.direction * Distance, clr);
     }
+    void DebugRay(float x, float y, float Distance, Color clr, int v)
+    {
+        Vector3 start = new Vector3(x, 1.45f, y), forward = Vector3.right;
+        if (v == 0) forward = Vector3.right;
+        if (v == 1) forward = Vector3.back;
+        if (v == 2) forward = Vector3.left;
+        if (v == 3) forward = Vector3.forward;
+        //право
+        Ray ray = new Ray(start, forward);
+        Debug.DrawRay(start, ray.direction * Distance, clr);
+    }
     private bool RayStart(Vector3 start, Vector3 forward, float rayDistance)
     {
         Ray ray = new Ray(start, forward);
@@ -255,17 +282,37 @@ public class AutoBallControl : BallControl
         for (int i = 0; i < Checed.Length; i++) Checed[i] = false;
         int thisPoint = Maze[MazeDescription.Rows - 1 - xM, yM];
         if (yM + 1 < MazeDescription.Cols)
-                if (Maze[MazeDescription.Rows - 1 - xM, yM + 1] == thisPoint - 1) // справа
-                    Checed[0] = true;
+        {
+            if (Maze[MazeDescription.Rows - 1 - xM, yM + 1] == thisPoint - 1)
+            { // справа
+                Checed[0] = true;
+                return Checed;
+            }
+        }
         if (MazeDescription.Rows - xM < MazeDescription.Rows)
-                if (Maze[MazeDescription.Rows - xM, yM] == thisPoint - 1) // снизу
-                    Checed[1] = true;
+        {
+            if (Maze[MazeDescription.Rows - xM, yM] == thisPoint - 1)
+            { // снизу
+                Checed[1] = true;
+                return Checed;
+            }
+        }
         if (yM - 1 >= 0)
-                if (Maze[MazeDescription.Rows - 1 - xM, yM - 1] == thisPoint - 1) // слева
-                    Checed[2] = true;
-        if (MazeDescription.Rows - 2 - xM > 0) 
-                if (Maze[MazeDescription.Rows - 2 - xM, yM] == thisPoint-1) // сверху
-                    Checed[3] = true;
+        {
+            if (Maze[MazeDescription.Rows - 1 - xM, yM - 1] == thisPoint - 1)
+            { // слева
+                Checed[2] = true;
+                return Checed;
+            }
+        }
+        if (MazeDescription.Rows - 2 - xM > 0)
+        {
+            if (Maze[MazeDescription.Rows - 2 - xM, yM] == thisPoint - 1)
+            { // сверху
+                Checed[3] = true;
+                return Checed;
+            }
+        }
         return Checed;
     }
     void goToTheBall(int x, int y)
@@ -273,14 +320,20 @@ public class AutoBallControl : BallControl
         bool[] checkedSide;
         while (Maze[MazeDescription.Rows - 1 - (int)x, (int)y] != 0)
         {
+            //DebugRay(y * 4, x * 4, 2f, Color.blue);
+            if (rsI == 2)
+            {
+                //DebugRay(y * 4, x * 4, 2f, Color.blue);
+                //Debug.LogError("ONESTOPPED");
+            }
             bool[] direction = RayCheck(y*4, x*4, 1f, 3f);
             checkedSide = checkSide(x, y);
             if (checkedSide[0]) //справа
             {
                 if (direction[0] == false)
                 {
+                    DebugRay(y * 4, x * 4, 4f, Color.blue, 0);
                     //Debug.Log("All Right");
-                    wayCount++;
                     way.Add(8);
                     y++;
                 }
@@ -295,7 +348,7 @@ public class AutoBallControl : BallControl
             {
                 if (direction[1] == false)
                 {
-                    wayCount++;
+                    DebugRay(y * 4, x * 4, 4f, Color.blue, 1);
                     way.Add(1);
                     x--;
                 }
@@ -310,7 +363,7 @@ public class AutoBallControl : BallControl
             {
                 if (direction[2] == false)
                 {
-                    wayCount++;
+                    DebugRay(y * 4, x * 4, 4f, Color.blue, 2);
                     way.Add(2);
                     y--;
                 }
@@ -325,7 +378,7 @@ public class AutoBallControl : BallControl
             {
                 if (direction[3] == false)
                 {
-                    wayCount++;
+                    DebugRay(y * 4, x * 4, 4f, Color.blue, 3);
                     way.Add(4);
                     x++;
                 }
@@ -339,5 +392,8 @@ public class AutoBallControl : BallControl
         }
         String Log = "";
         for (int iw = 0; iw < way.Count; iw++) Log += way[iw];
+        Debug.Log(Log);
+        wayCount = way.Count;
+        Debug.LogError("goToTheBall");
     }
 }
